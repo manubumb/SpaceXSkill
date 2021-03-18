@@ -4,17 +4,54 @@
  * session persistence, api calls, and more.
  * */
 const Alexa = require('ask-sdk-core');
+const https = require('https');
+
+//skill name
+const appName = 'My SpaceX Skill';
+
+// function to get data via https
+function httpsGet(value) {
+    return new Promise (((resolve, reject) => {
+        var options = {
+            host: 'api.spacexdata.com',
+            port: 443,
+            path: `/v4/${value}`,
+            method: 'GET'
+        };
+
+        var req = https.request(options, res => {
+            res.setEncoding('utf8');
+            var returnData = '';
+    
+            res.on('data', chunk => {
+                returnData += chunk;
+            });
+    
+            res.on('end', () => {
+                console.log(`returnData ${returnData}`);
+                resolve(returnData);
+            });
+
+            res.on('error', (error) => {
+                reject(error);
+            });
+        });
+        req.end();    
+    }));
+}
+
 
 const LaunchRequestHandler = {
     canHandle(handlerInput) {
         return Alexa.getRequestType(handlerInput.requestEnvelope) === 'LaunchRequest';
     },
     handle(handlerInput) {
-        const speakOutput = 'Welcome, you can say Hello or Help. Which would you like to try?';
-
+        const speakOutput = 'Welcome to my SpaceX skill.';
+        const displayText = 'Welcome to my SpaceX skill.';
         return handlerInput.responseBuilder
             .speak(speakOutput)
             .reprompt(speakOutput)
+            .withSimpleCard(appName, displayText)
             .getResponse();
     }
 };
@@ -30,6 +67,30 @@ const HelloWorldIntentHandler = {
         return handlerInput.responseBuilder
             .speak(speakOutput)
             //.reprompt('add a reprompt if you want to keep the session open for the user to respond')
+            .getResponse();
+    }
+};
+
+const CrewIntentHandler = {
+    canHandle(handlerInput) {
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
+            && Alexa.getIntentName(handlerInput.requestEnvelope) === 'CrewIntent';
+    },
+    async handle(handlerInput) {
+        let speakOutput = "";
+        let i = 0;
+        
+        const response = await httpsGet('crew');
+        let json = JSON.parse(response);
+        speakOutput += json[0].name + ' from ' + json[0].agency;
+        for (i = 1; i < json.length; i++) {
+            speakOutput += ', ' + json[i].name + ' from ' + json[i].agency;
+        }
+        
+        return handlerInput.responseBuilder
+            .speak(speakOutput)
+            .reprompt('What would you like to do next?')
+            .withSimpleCard(appName, speakOutput)
             .getResponse();
     }
 };
@@ -145,6 +206,7 @@ exports.handler = Alexa.SkillBuilders.custom()
     .addRequestHandlers(
         LaunchRequestHandler,
         HelloWorldIntentHandler,
+        CrewIntentHandler,
         HelpIntentHandler,
         CancelAndStopIntentHandler,
         FallbackIntentHandler,

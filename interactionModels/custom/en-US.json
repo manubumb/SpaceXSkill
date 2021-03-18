@@ -1,7 +1,7 @@
 {
   "interactionModel": {
     "languageModel": {
-      "invocationName": "my template",
+      "invocationName": "my spacex skill",
       "intents": [
         {
           "name": "AMAZON.CancelIntent",
@@ -35,10 +35,17 @@
         {
           "name": "AMAZON.FallbackIntent",
           "samples": []
+        },
+        {
+          "name": "CrewIntent",
+          "slots": [],
+          "samples": [
+            "Get all crew"
+          ]
         }
       ],
       "types": []
     }
   },
-  "version": "1"
+  "version": "2"
 }
